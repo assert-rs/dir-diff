@@ -28,7 +28,7 @@ pub enum Error {
     WalkDir(walkdir::Error),
 }
 
-/// Are two directories different?
+/// Are the contents of two directories different?
 ///
 /// # Examples
 ///
