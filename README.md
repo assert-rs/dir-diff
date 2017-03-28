@@ -17,7 +17,7 @@ extern crate tempdir;
 fn smoke_test() {
     let tmp_dir = TempDir::new("foo").expect("create temp dir failed");
 
-	generate_some_stuff(&tmp_dir);
+    generate_some_stuff(&tmp_dir);
 
     assert!(!dir_diff::is_different(&tmp_dir.path(), "path/to/fixture").unwrap());
 }
