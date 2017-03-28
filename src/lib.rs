@@ -11,7 +11,6 @@
 //! assert!(dir_diff::is_different("dir/a", "dir/b").unwrap());
 //! ```
 
-extern crate diff;
 extern crate walkdir;
 
 use std::fs::File;
@@ -61,25 +60,21 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
             }
         }
 
-        let a_text = read_to_string(a)?;
-        let b_text = read_to_string(b)?;
+        let a_text = read_to_vec(a)?;
+        let b_text = read_to_vec(b)?;
 
-        for result in diff::lines(&a_text, &b_text) {
-            match result {
-                diff::Result::Both(..) => (),
-                _ => return Ok(false),
-            }
+        if a_text != b_text {
+            return Ok(true);
         }
     }
-
-    Ok(true)
+    Ok(false)
 }
 
-fn read_to_string<P: AsRef<Path>>(file: P) -> Result<String, std::io::Error> {
-    let mut data = String::new();
+fn read_to_vec<P: AsRef<Path>>(file: P) -> Result<Vec<u8>, std::io::Error> {
+    let mut data = Vec::new();
     let mut file = File::open(file.as_ref())?;
 
-    file.read_to_string(&mut data)?;
+    file.read_to_end(&mut data)?;
 
     Ok(data)
 }
