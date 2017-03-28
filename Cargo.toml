@@ -1,0 +1,8 @@
+[package]
+authors = ["steveklabnik <steve@steveklabnik.com>"]
+name = "dir-diff"
+version = "0.1.0"
+
+[dependencies]
+diff = "0.1.10"
+walkdir = "1.0.7"
