@@ -40,6 +40,20 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
     let a_base = a_base.as_ref();
     let b_base = b_base.as_ref();
 
+    // We start by checking the count in the top-level directories. There's two
+    // reasons for this: first, if a is empty, but b is not, our for loop will not
+    // catch it; it will execute zero times and return true, and that's wrong!
+    // Second, if they're differnet, there's no reason to bother comparing the
+    // files; we already know they're different.
+
+    let a_count = std::fs::read_dir(&a_base)?.count();
+    let b_count = std::fs::read_dir(&b_base)?.count();
+
+    if a_count != b_count {
+        return Ok(true);
+    }
+
+    // next, we walk all of the entries in a and compare them to b
     for entry in WalkDir::new(a_base) {
         let entry = entry?;
         let a = entry.path();
@@ -76,6 +90,8 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
             return Ok(true);
         }
     }
+
+    // if we made it here, everything in a is in b!
     Ok(false)
 }
 
