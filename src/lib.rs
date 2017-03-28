@@ -53,6 +53,10 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
         return Ok(true);
     }
 
+    Ok(compare(&a_base, &b_base)? || compare(&b_base, &a_base)?)
+}
+
+fn compare(a_base: &Path, b_base: &Path) -> Result<bool, Error> {
     // next, we walk all of the entries in a and compare them to b
     for entry in WalkDir::new(a_base) {
         let entry = entry?;
@@ -63,8 +67,6 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
 
         // and then join that with b to get the path in b
         let b = b_base.join(no_prefix);
-
-        println!("comparing {} and {}", a.display(), b.display());
 
         if a.is_dir() {
             if b.is_dir() {
@@ -91,7 +93,7 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
         }
     }
 
-    // if we made it here, everything in a is in b!
+    // if we made it here, we're good!
     Ok(false)
 }
 

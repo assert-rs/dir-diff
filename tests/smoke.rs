@@ -29,3 +29,8 @@ fn fileanddir() {
 fn oneempty() {
     assert!(dir_diff::is_different("tests/oneempty/dir1", "tests/oneempty/dir2").unwrap());
 }
+
+#[test]
+fn reflexive() {
+    assert!(dir_diff::is_different("tests/reflexive/dir1", "tests/reflexive/dir2").unwrap());
+}
