@@ -50,6 +50,8 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
         // and then join that with b to get the path in b
         let b = b_base.join(no_prefix);
 
+        println!("comparing {} and {}", a.display(), b.display());
+
         if a.is_dir() {
             if b.is_dir() {
                 // can't compare the contents of directories, so just continue
@@ -60,8 +62,15 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
             }
         }
 
+        // file a is guaranteed to exist...
         let a_text = read_to_vec(a)?;
-        let b_text = read_to_vec(b)?;
+
+        // but file b is not. If we have any kind of error when loading
+        // it up, that's a positive result, not an actual error.
+        let b_text = match read_to_vec(b) {
+            Ok(contents) => contents,
+            Err(_) => return Ok(true),
+        };
 
         if a_text != b_text {
             return Ok(true);
