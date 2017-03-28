@@ -1,7 +1,7 @@
 [package]
 authors = ["steveklabnik <steve@steveklabnik.com>"]
 name = "dir-diff"
-version = "0.2.0"
+version = "0.3.0"
 description = "Do two directories have different contents?"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/steveklabnik/dir-diff"
