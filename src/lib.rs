@@ -56,7 +56,7 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
                 continue;
             } else {
                 // if one is a file and one is a directory, we have a difference!
-                return Ok(false)
+                return Ok(true)
             }
         }
 

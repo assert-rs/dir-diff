@@ -19,3 +19,8 @@ fn binary_good() {
 fn binary_bad() {
     assert!(dir_diff::is_different("tests/binary/bad/dir1", "tests/binary/bad/dir2").unwrap());
 }
+
+#[test]
+fn fileanddir() {
+    assert!(dir_diff::is_different("tests/fileanddir/dir1", "tests/fileanddir/dir2").unwrap());
+}
