@@ -53,7 +53,7 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
         return Ok(true);
     }
 
-    Ok(compare(&a_base, &b_base)? || compare(&b_base, &a_base)?)
+    Ok(compare(a_base, b_base)? || compare(b_base, a_base)?)
 }
 
 fn compare(a_base: &Path, b_base: &Path) -> Result<bool, Error> {
