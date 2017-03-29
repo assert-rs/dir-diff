@@ -2,6 +2,8 @@
 
 Are the contents of two directories different?
 
+[![Build Status](https://travis-ci.org/steveklabnik/dir-diff.svg?branch=master)](https://travis-ci.org/steveklabnik/dir-diff)
+
 Mostly useful for integration-style tests when you want to check some generated
 output.
 
