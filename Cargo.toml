@@ -5,7 +5,7 @@ version = "0.3.0"
 description = "Do two directories have different contents?"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/steveklabnik/dir-diff"
-documentation = "https://docs.rs/dir-diff"
+documentation = "https://docs.rs/crate/dir-diff"
 readme = "README.md"
 tags = ["directory", "diff", "fs"]
 
