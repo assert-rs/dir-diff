@@ -7,7 +7,7 @@
 //!
 //! ```no_run
 //! extern crate dir_diff;
-//! 
+//!
 //! assert!(dir_diff::is_different("dir/a", "dir/b").unwrap());
 //! ```
 
@@ -16,8 +16,9 @@ extern crate walkdir;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use std::cmp::Ordering;
 
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 
 /// The various errors that can happen when diffing two directories
 #[derive(Debug)]
@@ -33,68 +34,36 @@ pub enum Error {
 ///
 /// ```no_run
 /// extern crate dir_diff;
-/// 
+///
 /// assert!(dir_diff::is_different("dir/a", "dir/b").unwrap());
 /// ```
 pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Result<bool, Error> {
-    let a_base = a_base.as_ref();
-    let b_base = b_base.as_ref();
+    let mut a_walker = walk_dir(a_base);
+    let mut b_walker = walk_dir(b_base);
 
-    // We start by checking the count in the top-level directories. There's two
-    // reasons for this: first, if a is empty, but b is not, our for loop will not
-    // catch it; it will execute zero times and return true, and that's wrong!
-    // Second, if they're differnet, there's no reason to bother comparing the
-    // files; we already know they're different.
+    for (a, b) in (&mut a_walker).zip(&mut b_walker) {
+        let a = a?;
+        let b = b?;
 
-    let a_count = std::fs::read_dir(&a_base)?.count();
-    let b_count = std::fs::read_dir(&b_base)?.count();
-
-    if a_count != b_count {
-        return Ok(true);
-    }
-
-    Ok(compare(a_base, b_base)? || compare(b_base, a_base)?)
-}
-
-fn compare(a_base: &Path, b_base: &Path) -> Result<bool, Error> {
-    // next, we walk all of the entries in a and compare them to b
-    for entry in WalkDir::new(a_base) {
-        let entry = entry?;
-        let a = entry.path();
-
-        // calculate just the part of the path relative to a
-        let no_prefix = a.strip_prefix(a_base)?;
-
-        // and then join that with b to get the path in b
-        let b = b_base.join(no_prefix);
-
-        if a.is_dir() {
-            if b.is_dir() {
-                // can't compare the contents of directories, so just continue
-                continue;
-            } else {
-                // if one is a file and one is a directory, we have a difference!
-                return Ok(true)
-            }
-        }
-
-        // file a is guaranteed to exist...
-        let a_text = read_to_vec(a)?;
-
-        // but file b is not. If we have any kind of error when loading
-        // it up, that's a positive result, not an actual error.
-        let b_text = match read_to_vec(b) {
-            Ok(contents) => contents,
-            Err(_) => return Ok(true),
-        };
-
-        if a_text != b_text {
+        if a.file_type() != b.file_type() || a.file_name() != b.file_name()
+            || (a.file_type().is_file() && read_to_vec(a.path())? != read_to_vec(b.path())?)
+        {
             return Ok(true);
         }
     }
 
-    // if we made it here, we're good!
-    Ok(false)
+    Ok(!a_walker.next().is_none() || !b_walker.next().is_none())
+}
+
+fn walk_dir<P: AsRef<Path>>(path: P) -> std::iter::Skip<walkdir::IntoIter> {
+    WalkDir::new(path)
+        .sort_by(compare_by_file_name)
+        .into_iter()
+        .skip(1)
+}
+
+fn compare_by_file_name(a: &DirEntry, b: &DirEntry) -> Ordering {
+    a.file_name().cmp(b.file_name())
 }
 
 fn read_to_vec<P: AsRef<Path>>(file: P) -> Result<Vec<u8>, std::io::Error> {
