@@ -10,4 +10,4 @@ readme = "README.md"
 tags = ["directory", "diff", "fs"]
 
 [dependencies]
-walkdir = "1.0.7"
+walkdir = "2.0.1"
