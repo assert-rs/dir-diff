@@ -52,7 +52,7 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
         }
     }
 
-    return Ok(!a_walker.next().is_none() || !b_walker.next().is_none());
+    Ok(!a_walker.next().is_none() || !b_walker.next().is_none())
 }
 
 fn walk_dir<P: AsRef<Path>>(path: P) -> std::iter::Skip<walkdir::IntoIter> {
