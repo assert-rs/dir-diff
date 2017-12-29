@@ -39,6 +39,11 @@ fn reflexive() {
     assert!(dir_diff::is_different("tests/reflexive/dir1", "tests/reflexive/dir2").unwrap());
 }
 
+#[test]
+fn dirs_differ() {
+    assert!(dir_diff::is_different("tests/dirs_differ/dir1", "tests/dirs_differ/dir2").unwrap());
+}
+
 fn ensure_dir<P: AsRef<Path>>(path: P) -> Result<(), std::io::Error> {
     match create_dir(path) {
         Err(ref err) if err.kind() == ErrorKind::AlreadyExists => Ok(()),
