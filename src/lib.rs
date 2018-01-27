@@ -20,13 +20,9 @@ use std::cmp::Ordering;
 
 use walkdir::{DirEntry, WalkDir};
 
-/// The various errors that can happen when diffing two directories
-#[derive(Debug)]
-pub enum Error {
-    Io(std::io::Error),
-    StripPrefix(std::path::StripPrefixError),
-    WalkDir(walkdir::Error),
-}
+mod error;
+
+pub use error::Error;
 
 /// Are the contents of two directories different?
 ///
@@ -45,10 +41,9 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
         let a = a?;
         let b = b?;
 
-        if a.depth() != b.depth() || a.file_type() != b.file_type()
-            || a.file_name() != b.file_name()
-            || (a.file_type().is_file() && read_to_vec(a.path())? != read_to_vec(b.path())?)
-        {
+        if a.depth() != b.depth() || a.file_type() != b.file_type() ||
+           a.file_name() != b.file_name() ||
+           (a.file_type().is_file() && read_to_vec(a.path())? != read_to_vec(b.path())?) {
             return Ok(true);
         }
     }
