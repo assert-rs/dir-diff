@@ -4,3 +4,21 @@ rust:
   - nightly
   - beta
   - stable
+
+matrix:
+  include:
+    - rust: nightly-2017-10-09
+      env:
+        - CLIPPY_VERS="0.0.165"
+        - CLIPPY_TOOLCHAIN="2017-10-09"
+      install:
+        - cargo +nightly-$CLIPPY_TOOLCHAIN clippy -- --version || travis_wait cargo +nightly-$CLIPPY_TOOLCHAIN install clippy --vers "$CLIPPY_VERS" --force
+        - export PATH=$HOME/.cargo/bin:$PATH
+      script:
+        - cargo +nightly-$CLIPPY_TOOLCHAIN clippy -- -D warnings
+
+script:
+  - rustc -Vv
+  - cargo -V
+  - cargo check --verbose
+  - cargo test  --verbose
