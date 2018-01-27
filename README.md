@@ -3,11 +3,12 @@
 Are the contents of two directories different?
 
 [![Build Status](https://travis-ci.org/steveklabnik/dir-diff.svg?branch=master)](https://travis-ci.org/steveklabnik/dir-diff)
+[![Crates Status](https://img.shields.io/crates/v/dir-diff.svg)](https://crates.io/crates/dir-diff)
 
 Mostly useful for integration-style tests when you want to check some generated
 output.
 
-## Usage
+## Example
 
 Using `dir-diff` in an integration test with [`tempdir`]:
 
