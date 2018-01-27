@@ -51,11 +51,11 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
     Ok(!a_walker.next().is_none() || !b_walker.next().is_none())
 }
 
-fn walk_dir<P: AsRef<Path>>(path: P) -> std::iter::Skip<walkdir::IntoIter> {
+fn walk_dir<P: AsRef<Path>>(path: P) -> walkdir::IntoIter {
     WalkDir::new(path)
         .sort_by(compare_by_file_name)
+        .min_depth(1)
         .into_iter()
-        .skip(1)
 }
 
 fn compare_by_file_name(a: &DirEntry, b: &DirEntry) -> Ordering {
