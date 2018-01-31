@@ -20,7 +20,7 @@ use std::path::{Path, PathBuf};
 mod error;
 mod iter;
 
-pub use error::Error;
+pub use error::IoError;
 
 /// Are the contents of two directories different?
 ///
@@ -31,7 +31,7 @@ pub use error::Error;
 ///
 /// assert!(dir_diff::is_different("dir/a", "dir/b").unwrap());
 /// ```
-pub fn is_different<L, R>(left_root: L, right_root: R) -> Result<bool, Error>
+pub fn is_different<L, R>(left_root: L, right_root: R) -> Result<bool, IoError>
     where L: Into<PathBuf>,
           R: Into<PathBuf>
 {
@@ -56,7 +56,7 @@ pub fn is_different<L, R>(left_root: L, right_root: R) -> Result<bool, Error>
     Ok(false)
 }
 
-fn read_to_vec<P: AsRef<Path>>(file: P) -> Result<Vec<u8>, std::io::Error> {
+fn read_to_vec<P: AsRef<Path>>(file: P) -> Result<Vec<u8>, IoError> {
     let mut data = Vec::new();
     let mut file = File::open(file.as_ref())?;
 

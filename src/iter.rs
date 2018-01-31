@@ -3,7 +3,7 @@ use std::path;
 
 use walkdir;
 
-use error::Error;
+use error::IoError;
 
 type WalkIter = walkdir::IntoIter;
 
@@ -30,7 +30,7 @@ impl DirDiff {
 }
 
 impl IntoIterator for DirDiff {
-    type Item = Result<DiffEntry, Error>;
+    type Item = Result<DiffEntry, IoError>;
 
     type IntoIter = IntoIter;
 
@@ -53,14 +53,14 @@ pub struct DirEntry {
 }
 
 impl DirEntry {
-    pub(self) fn exists(path: path::PathBuf) -> Result<Self, Error> {
+    pub(self) fn exists(path: path::PathBuf) -> Result<Self, IoError> {
         let metadata = fs::symlink_metadata(&path)?;
         let file_type = Some(metadata.file_type());
         let s = Self { path, file_type };
         Ok(s)
     }
 
-    pub(self) fn missing(path: path::PathBuf) -> Result<Self, Error> {
+    pub(self) fn missing(path: path::PathBuf) -> Result<Self, IoError> {
         let file_type = None;
         let s = Self { path, file_type };
         Ok(s)
@@ -100,7 +100,7 @@ pub struct IntoIter {
 }
 
 impl IntoIter {
-    fn transposed_next(&mut self) -> Result<Option<DiffEntry>, Error> {
+    fn transposed_next(&mut self) -> Result<Option<DiffEntry>, IoError> {
         if let Some(entry) = self.left_walk.next() {
             let entry = entry?;
             let entry_path = entry.path();
@@ -149,7 +149,7 @@ impl IntoIter {
 }
 
 impl Iterator for IntoIter {
-    type Item = Result<DiffEntry, Error>;
+    type Item = Result<DiffEntry, IoError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let item = self.transposed_next();
