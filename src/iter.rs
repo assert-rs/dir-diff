@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::ffi;
 use std::fs;
+use std::io;
 use std::path;
 
 use walkdir;
@@ -214,18 +215,35 @@ impl DiffEntry {
     }
 
     fn content_matches(&self) -> Result<bool, IoError> {
-        let left = Self::read_to_vec(self.left.path())?;
-        let right = Self::read_to_vec(self.right.path())?;
-        Ok(left == right)
-    }
+        const CAP: usize = 1024;
 
-    fn read_to_vec(file: &path::Path) -> Result<Vec<u8>, IoError> {
-        let mut data = Vec::new();
-        let mut file = fs::File::open(file)?;
+        let left_file = fs::File::open(self.left.path())?;
+        let mut left_buf = io::BufReader::with_capacity(CAP, left_file);
 
-        file.read_to_end(&mut data)?;
+        let right_file = fs::File::open(self.right.path())?;
+        let mut right_buf = io::BufReader::with_capacity(CAP, right_file);
 
-        Ok(data)
+        loop {
+            let length = {
+                let left = left_buf.fill_buf()?;
+                let right = right_buf.fill_buf()?;
+                if left != right {
+                    return Ok(false);
+                }
+
+                assert_eq!(left.len(),
+                           right.len(),
+                           "Above check should ensure lengths are the same");
+                left.len()
+            };
+            if length == 0 {
+                break;
+            }
+            left_buf.consume(length);
+            right_buf.consume(length);
+        }
+
+        Ok(true)
     }
 }
 
