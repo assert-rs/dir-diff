@@ -15,12 +15,10 @@ extern crate walkdir;
 
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::Path;
-use std::cmp::Ordering;
-
-use walkdir::{DirEntry, WalkDir};
+use std::path::{Path, PathBuf};
 
 mod error;
+mod iter;
 
 pub use error::Error;
 
@@ -33,33 +31,29 @@ pub use error::Error;
 ///
 /// assert!(dir_diff::is_different("dir/a", "dir/b").unwrap());
 /// ```
-pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Result<bool, Error> {
-    let mut a_walker = walk_dir(a_base);
-    let mut b_walker = walk_dir(b_base);
+pub fn is_different<L, R>(left_root: L, right_root: R) -> Result<bool, Error>
+    where L: Into<PathBuf>,
+          R: Into<PathBuf>
+{
+    for entry in iter::DirDiff::new(left_root, right_root) {
+        let entry = entry?;
+        let left = entry.left();
+        let right = entry.right();
 
-    for (a, b) in (&mut a_walker).zip(&mut b_walker) {
-        let a = a?;
-        let b = b?;
+        // Covers missing files because We know that entry can never be missing on both sides
+        if left.file_type() != right.file_type() {
+            return Ok(true);
+        }
 
-        if a.depth() != b.depth() || a.file_type() != b.file_type() ||
-           a.file_name() != b.file_name() ||
-           (a.file_type().is_file() && read_to_vec(a.path())? != read_to_vec(b.path())?) {
+        let are_files = left.file_type()
+            .expect("exists because of above `file_type` check")
+            .is_file();
+        if are_files && read_to_vec(left.path())? != read_to_vec(right.path())? {
             return Ok(true);
         }
     }
 
-    Ok(!a_walker.next().is_none() || !b_walker.next().is_none())
-}
-
-fn walk_dir<P: AsRef<Path>>(path: P) -> walkdir::IntoIter {
-    WalkDir::new(path)
-        .sort_by(compare_by_file_name)
-        .min_depth(1)
-        .into_iter()
-}
-
-fn compare_by_file_name(a: &DirEntry, b: &DirEntry) -> Ordering {
-    a.file_name().cmp(b.file_name())
+    Ok(false)
 }
 
 fn read_to_vec<P: AsRef<Path>>(file: P) -> Result<Vec<u8>, std::io::Error> {
