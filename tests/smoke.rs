@@ -1,8 +1,8 @@
 extern crate dir_diff;
 
-use std::path::Path;
 use std::fs::create_dir;
 use std::io::ErrorKind;
+use std::path::Path;
 
 #[test]
 fn easy_good() {
