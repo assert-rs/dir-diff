@@ -71,14 +71,23 @@ macro_rules! add_row {
     };
 }
 
+/// Prints any differences between content of two directories to stdout.
+///
+/// # Examples
+///
+/// ```no_run
+/// extern crate dir_diff;
+///
+/// assert_eq!(dir_diff::see_difference("main/dir1", "main/dir1").unwrap(), ());
+/// ```
 pub fn see_difference<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Result<(), Error> {
     let mut table = Table::new();
-    table.max_column_width = 40;
+    table.max_column_width = 400;
 
     table.style = TableStyle::extended();
 
-    let filename_a = &a_base.as_ref().to_str().unwrap();
-    let filename_b = &b_base.as_ref().to_str().unwrap();
+    let filename_a = &a_base.as_ref().to_string_lossy();
+    let filename_b = &b_base.as_ref().to_string_lossy();
 
     table.add_row(Row::new(vec![Cell::new_with_alignment(
         "DIFFERENCES",
@@ -92,7 +101,7 @@ pub fn see_difference<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> R
         Cell::new(filename_b, 1),
     ]));
 
-    let zipped_file_names = zip_dir_files_to_same_name(
+    let zipped_file_names = pair_files_to_same_name(
         &walk_dir_and_get_only_files(&a_base),
         &mut walk_dir_and_get_only_files(&b_base),
     );
@@ -110,7 +119,6 @@ pub fn see_difference<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> R
             (Some(file_1), Some(file_2)) => {
                 let mut buffreader_a =
                     BufReader::new(File::open(format!("{}/{}", filename_a, &file_1))?).lines();
-
                 let mut buffreader_b =
                     BufReader::new(File::open(format!("{}/{}", filename_b, &file_2))?).lines();
 
@@ -194,14 +202,18 @@ fn walk_dir<P: AsRef<Path>>(path: P) -> std::iter::Skip<walkdir::IntoIter> {
         .skip(1)
 }
 
+/// Iterated through a directory, and collects only the file paths (excluding dir path).
 fn walk_dir_and_get_only_files<P: AsRef<Path>>(path: P) -> Vec<String> {
+    let base_path: &str = &path.as_ref().to_string_lossy().to_string();
+
     WalkDir::new(&path)
         .into_iter()
         .filter_map(Result::ok)
         .filter(|a| a.file_type().is_file())
         .into_iter()
         .map(|e| {
-            String::from(e.path().to_str().unwrap()).replace(path.as_ref().to_str().unwrap(), "")
+            let file_path = e.path().to_string_lossy().to_string();
+            String::from(file_path).replace(base_path, "")
         })
         .collect()
 }
@@ -210,15 +222,15 @@ fn compare_by_file_name(a: &DirEntry, b: &DirEntry) -> Ordering {
     a.file_name().cmp(b.file_name())
 }
 
-fn zip_dir_files_to_same_name<'a>(
-    el1: &[String],
-    el2: &mut Vec<String>,
+fn pair_files_to_same_name<'a>(
+    dir1: &[String],
+    dir2: &mut Vec<String>,
 ) -> Vec<(Option<String>, Option<String>)> {
-    let matched_data = el1.iter().fold(
+    let matched_data = dir1.iter().fold(
         Vec::<(Option<String>, Option<String>)>::new(),
         |mut previous, current| {
-            match el2.into_iter().position(|x| x == current) {
-                Some(i) => previous.push((Some(current.to_string()), Some(el2.remove(i)))),
+            match dir2.into_iter().position(|x| x == current) {
+                Some(i) => previous.push((Some(current.to_string()), Some(dir2.remove(i)))),
                 None => previous.push((Some(current.to_string()), None)),
             };
 
@@ -226,10 +238,11 @@ fn zip_dir_files_to_same_name<'a>(
         },
     );
 
-    el2.into_iter().fold(matched_data, |mut previous, current| {
-        previous.push((None, Some(current.to_string())));
-        previous
-    })
+    dir2.into_iter()
+        .fold(matched_data, |mut previous, current| {
+            previous.push((None, Some(current.to_string())));
+            previous
+        })
 }
 
 fn read_to_vec<P: AsRef<Path>>(file: P) -> Result<Vec<u8>, std::io::Error> {
