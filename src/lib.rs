@@ -9,19 +9,15 @@
 //! extern crate dir_diff;
 //!
 //! assert!(dir_diff::is_different("dir/a", "dir/b").unwrap());
-//! ```
+//!
 
-extern crate term_table;
 extern crate walkdir;
 
 use std::cmp::Ordering;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::{BufRead, BufReader};
+use std::io::prelude::Read;
 use std::path::Path;
-use term_table::{
-    cell::{Alignment, Cell}, row::Row, Table, TableStyle,
-};
+use std::path::PathBuf;
+use std::{fs, fs::File};
 use walkdir::{DirEntry, WalkDir};
 
 /// The various errors that can happen when diffing two directories
@@ -30,6 +26,22 @@ pub enum Error {
     Io(std::io::Error),
     StripPrefix(std::path::StripPrefixError),
     WalkDir(walkdir::Error),
+    /// One directory has more or less files than the other.
+    MissingFiles,
+    /// File name doesn't match.
+    FileNameMismatch(PathBuf, PathBuf),
+    /// Binary contetn doesn't match.
+    BinaryContentMismatch(PathBuf, PathBuf),
+    /// One file has more or less lines than the other.
+    FileLengthMismatch(PathBuf, PathBuf),
+    /// The content of a file doesn't match.
+    ContentMismatch {
+        line_number: usize,
+        a_path: PathBuf,
+        b_path: PathBuf,
+        a_content: String,
+        b_content: String,
+    },
 }
 
 /// Are the contents of two directories different?
@@ -61,17 +73,7 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
     Ok(!a_walker.next().is_none() || !b_walker.next().is_none())
 }
 
-macro_rules! add_row {
-    ($table:expr, $file_name:expr, $line_one:expr, $line_two:expr) => {
-        $table.add_row(Row::new(vec![
-            Cell::new($file_name, 1),
-            Cell::new($line_one, 1),
-            Cell::new($line_two, 1),
-        ]));
-    };
-}
-
-/// Prints any differences between content of two directories to stdout.
+/// Identify the differences between two directories.
 ///
 /// # Examples
 ///
@@ -81,117 +83,70 @@ macro_rules! add_row {
 /// assert_eq!(dir_diff::see_difference("main/dir1", "main/dir1").unwrap(), ());
 /// ```
 pub fn see_difference<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Result<(), Error> {
-    let mut table = Table::new();
-    table.max_column_width = 400;
+    let mut files_a = walk_dir_and_strip_prefix(&a_base)
+        .into_iter()
+        .collect::<Vec<_>>();
+    let mut files_b = walk_dir_and_strip_prefix(&b_base)
+        .into_iter()
+        .collect::<Vec<_>>();
 
-    table.style = TableStyle::extended();
+    if files_a.len() != files_b.len() {
+        return Err(Error::MissingFiles);
+    }
 
-    let filename_a = &a_base.as_ref().to_string_lossy();
-    let filename_b = &b_base.as_ref().to_string_lossy();
+    files_a.sort();
+    files_b.sort();
 
-    table.add_row(Row::new(vec![Cell::new_with_alignment(
-        "DIFFERENCES",
-        3,
-        Alignment::Center,
-    )]));
+    for (a, b) in files_a.into_iter().zip(files_b.into_iter()).into_iter() {
+        if a != b {
+            return Err(Error::FileNameMismatch(a, b));
+        }
 
-    table.add_row(Row::new(vec![
-        Cell::new("Filename", 1),
-        Cell::new(filename_a, 1),
-        Cell::new(filename_b, 1),
-    ]));
+        let full_path_a = &a_base.as_ref().join(&a);
+        let full_path_b = &b_base.as_ref().join(&b);
 
-    let zipped_file_names = pair_files_to_same_name(
-        &walk_dir_and_get_only_files(&a_base),
-        &mut walk_dir_and_get_only_files(&b_base),
-    );
+        if full_path_a.is_dir() || full_path_b.is_dir() {
+            continue;
+        }
 
-    for (a, b) in zipped_file_names.into_iter() {
-        match (a, b) {
-            (Some(i), None) => {
-                add_row!(table, i, "FILE EXISTS", "DOESN'T EXIST");
-            }
+        let content_of_a = fs::read(full_path_a)?;
+        let content_of_b = fs::read(full_path_b)?;
 
-            (None, Some(i)) => {
-                add_row!(table, i, "DOESN'T EXIST", "FILE EXISTS");
-            }
-
-            (Some(file_1), Some(file_2)) => {
-                let mut buffreader_a =
-                    BufReader::new(File::open(format!("{}/{}", filename_a, &file_1))?).lines();
-                let mut buffreader_b =
-                    BufReader::new(File::open(format!("{}/{}", filename_b, &file_2))?).lines();
-
-                let mut line_number = 1;
-
-                loop {
-                    match (&buffreader_a.next(), &buffreader_b.next()) {
-                        (None, None) => break,
-
-                        (Some(line_a), Some(line_b)) => {
-                            match (line_a, line_b) {
-                                (Ok(content_a), Ok(content_b)) => if content_a != content_b {
-                                    add_row!(
-                                        table,
-                                        format!("\"{}\":{}", &file_1, line_number),
-                                        &content_a,
-                                        &content_b
-                                    );
-                                },
-                                (Ok(content_a), Err(_)) => {
-                                    add_row!(
-                                        table,
-                                        format!("\"{}\":{}", &file_1, line_number),
-                                        &content_a,
-                                        ""
-                                    );
-                                }
-                                (Err(_), Ok(content_b)) => {
-                                    add_row!(
-                                        table,
-                                        format!("\"{}\":{}", &file_1, line_number),
-                                        "",
-                                        &content_b
-                                    );
-                                }
-                                _ => {}
-                            };
-                        }
-
-                        (Some(line_a), None) => match line_a {
-                            Ok(line_content) => add_row!(
-                                table,
-                                format!("\"{}\":{}", &file_1, line_number),
-                                &line_content,
-                                ""
-                            ),
-
-                            Err(_) => {
-                                add_row!(table, format!("\"{}\":{}", &file_1, line_number), "", "")
-                            }
-                        },
-
-                        (None, Some(line_b)) => match line_b {
-                            Ok(line_content) => add_row!(
-                                table,
-                                format!("\"{}\":{}", &file_2, line_number),
-                                "",
-                                &line_content
-                            ),
-                            Err(_) => {
-                                add_row!(table, format!("\"{}\":{}", &file_2, line_number), "", "")
-                            }
-                        },
-                    };
-
-                    line_number += 1;
+        match (
+            String::from_utf8(content_of_a),
+            String::from_utf8(content_of_b),
+        ) {
+            (Err(content_of_a), Err(content_of_b)) => {
+                if content_of_a.as_bytes() != content_of_b.as_bytes() {
+                    return Err(Error::BinaryContentMismatch(a, b));
                 }
             }
-            _ => {}
+            (Ok(content_of_a), Ok(content_of_b)) => {
+                let mut a_lines = content_of_a.lines().collect::<Vec<&str>>();
+                let mut b_lines = content_of_b.lines().collect::<Vec<&str>>();
+
+                if a_lines.len() != b_lines.len() {
+                    return Err(Error::FileLengthMismatch(a, b));
+                }
+
+                for (line_number, (line_a, line_b)) in
+                    a_lines.into_iter().zip(b_lines.into_iter()).enumerate()
+                {
+                    if line_a != line_b {
+                        return Err(Error::ContentMismatch {
+                            a_path: a,
+                            b_path: b,
+                            a_content: line_a.to_string(),
+                            b_content: line_b.to_string(),
+                            line_number,
+                        });
+                    }
+                }
+            }
+            _ => return Err(Error::BinaryContentMismatch(a, b)),
         }
     }
 
-    println!("{}", table.as_string());
     Ok(())
 }
 
@@ -202,47 +157,23 @@ fn walk_dir<P: AsRef<Path>>(path: P) -> std::iter::Skip<walkdir::IntoIter> {
         .skip(1)
 }
 
-/// Iterated through a directory, and collects only the file paths (excluding dir path).
-fn walk_dir_and_get_only_files<P: AsRef<Path>>(path: P) -> Vec<String> {
-    let base_path: &str = &path.as_ref().to_string_lossy().to_string();
-
-    WalkDir::new(&path)
+/// Iterated through a directory, and strip t
+fn walk_dir_and_strip_prefix<'a, P>(path: P) -> impl Iterator<Item = PathBuf>
+where
+    P: AsRef<Path> + Copy,
+{
+    WalkDir::new(path)
         .into_iter()
         .filter_map(Result::ok)
-        .filter(|a| a.file_type().is_file())
-        .into_iter()
-        .map(|e| {
-            let file_path = e.path().to_string_lossy().to_string();
-            String::from(file_path).replace(base_path, "")
+        // .filter(|a| a.to_owned().file_type().is_file())
+        .filter_map(move |e| {
+            let new_path = e.path();
+            new_path.strip_prefix(&path).map(|e| e.to_owned()).ok()
         })
-        .collect()
 }
 
 fn compare_by_file_name(a: &DirEntry, b: &DirEntry) -> Ordering {
     a.file_name().cmp(b.file_name())
-}
-
-fn pair_files_to_same_name<'a>(
-    dir1: &[String],
-    dir2: &mut Vec<String>,
-) -> Vec<(Option<String>, Option<String>)> {
-    let matched_data = dir1.iter().fold(
-        Vec::<(Option<String>, Option<String>)>::new(),
-        |mut previous, current| {
-            match dir2.into_iter().position(|x| x == current) {
-                Some(i) => previous.push((Some(current.to_string()), Some(dir2.remove(i)))),
-                None => previous.push((Some(current.to_string()), None)),
-            };
-
-            return previous;
-        },
-    );
-
-    dir2.into_iter()
-        .fold(matched_data, |mut previous, current| {
-            previous.push((None, Some(current.to_string())));
-            previous
-        })
 }
 
 fn read_to_vec<P: AsRef<Path>>(file: P) -> Result<Vec<u8>, std::io::Error> {
