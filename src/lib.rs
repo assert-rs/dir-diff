@@ -157,18 +157,17 @@ fn walk_dir<P: AsRef<Path>>(path: P) -> std::iter::Skip<walkdir::IntoIter> {
         .skip(1)
 }
 
-/// Iterated through a directory, and strip t
-fn walk_dir_and_strip_prefix<'a, P>(path: P) -> impl Iterator<Item = PathBuf>
+/// Iterated through a directory, and strips the prefix of each path.
+fn walk_dir_and_strip_prefix<'a, P>(prefix: P) -> impl Iterator<Item = PathBuf>
 where
     P: AsRef<Path> + Copy,
 {
-    WalkDir::new(path)
+    WalkDir::new(prefix)
         .into_iter()
         .filter_map(Result::ok)
-        // .filter(|a| a.to_owned().file_type().is_file())
         .filter_map(move |e| {
             let new_path = e.path();
-            new_path.strip_prefix(&path).map(|e| e.to_owned()).ok()
+            new_path.strip_prefix(&prefix).map(|e| e.to_owned()).ok()
         })
 }
 
