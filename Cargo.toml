@@ -15,4 +15,4 @@ travis-ci = { repository = "steveklabnik/dir-diff" }
 
 [dependencies]
 walkdir = "2.0.1"
-term-table = "0.1.5"
+matches = "0.1.7"
