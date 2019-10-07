@@ -35,6 +35,24 @@ fn oneempty() {
 }
 
 #[test]
+#[should_panic]
+fn firstmissing() {
+    assert!(dir_diff::is_different("does_not_exist", "tests/easy/good/dir1").unwrap());
+}
+
+#[test]
+#[should_panic]
+fn secondmissing() {
+    assert!(dir_diff::is_different("tests/easy/good/dir1", "does_not_exist").unwrap());
+}
+
+#[test]
+#[should_panic]
+fn bothmissing() {
+    assert!(dir_diff::is_different("does_not_exist", "also_does_not_exist").unwrap());
+}
+
+#[test]
 fn reflexive() {
     assert!(dir_diff::is_different("tests/reflexive/dir1", "tests/reflexive/dir2").unwrap());
 }
