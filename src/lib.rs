@@ -13,10 +13,10 @@
 
 extern crate walkdir;
 
+use std::cmp::Ordering;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::cmp::Ordering;
 
 use walkdir::{DirEntry, WalkDir};
 
@@ -38,14 +38,15 @@ pub enum Error {
 /// assert!(dir_diff::is_different("dir/a", "dir/b").unwrap());
 /// ```
 pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Result<bool, Error> {
-    let mut a_walker = walk_dir(a_base);
-    let mut b_walker = walk_dir(b_base);
+    let mut a_walker = walk_dir(a_base)?;
+    let mut b_walker = walk_dir(b_base)?;
 
     for (a, b) in (&mut a_walker).zip(&mut b_walker) {
         let a = a?;
         let b = b?;
 
-        if a.depth() != b.depth() || a.file_type() != b.file_type()
+        if a.depth() != b.depth()
+            || a.file_type() != b.file_type()
             || a.file_name() != b.file_name()
             || (a.file_type().is_file() && read_to_vec(a.path())? != read_to_vec(b.path())?)
         {
@@ -53,14 +54,16 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
         }
     }
 
-    Ok(!a_walker.next().is_none() || !b_walker.next().is_none())
+    Ok(a_walker.next().is_some() || b_walker.next().is_some())
 }
 
-fn walk_dir<P: AsRef<Path>>(path: P) -> std::iter::Skip<walkdir::IntoIter> {
-    WalkDir::new(path)
-        .sort_by(compare_by_file_name)
-        .into_iter()
-        .skip(1)
+fn walk_dir<P: AsRef<Path>>(path: P) -> Result<walkdir::IntoIter, std::io::Error> {
+    let mut walkdir = WalkDir::new(path).sort_by(compare_by_file_name).into_iter();
+    if let Some(Err(e)) = walkdir.next() {
+        Err(e.into())
+    } else {
+        Ok(walkdir)
+    }
 }
 
 fn compare_by_file_name(a: &DirEntry, b: &DirEntry) -> Ordering {
