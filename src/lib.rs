@@ -28,6 +28,18 @@ pub enum Error {
     WalkDir(walkdir::Error),
 }
 
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::Io(inner) => write!(f, "I/O error: {}", inner),
+            Error::StripPrefix(inner) => write!(f, "Strip prefix error: {}", inner),
+            Error::WalkDir(inner) => write!(f, "Walk dir error: {}", inner),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
+
 /// Are the contents of two directories different?
 ///
 /// # Examples
@@ -94,5 +106,23 @@ impl From<std::path::StripPrefixError> for Error {
 impl From<walkdir::Error> for Error {
     fn from(e: walkdir::Error) -> Error {
         Error::WalkDir(e)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_display() {
+        use std::io::ErrorKind;
+
+        assert_eq!(
+            format!(
+                "{}",
+                Error::Io(std::io::Error::new(ErrorKind::Other, "oh no!"))
+            ),
+            "I/O error: oh no!"
+        );
     }
 }
