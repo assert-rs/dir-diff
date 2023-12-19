@@ -18,7 +18,7 @@ include = [
 
 [package]
 name = "dir-diff"
-version = "0.3.0"
+version = "0.3.2"
 description = "Do two directories have different contents?"
 repository = "https://github.com/assert-rs/dir-diff.git"
 homepage = "https://github.com/assert-rs/dir-diff"
