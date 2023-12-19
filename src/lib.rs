@@ -11,6 +11,8 @@
 //! assert!(dir_diff::is_different("dir/a", "dir/b").unwrap());
 //! ```
 
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 extern crate walkdir;
 
 use std::cmp::Ordering;

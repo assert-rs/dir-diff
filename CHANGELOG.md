@@ -1,13 +1,11 @@
-<a name="0.3.2"></a>
-## 0.3.2 (2019-10-07)
+# Change Log
+All notable changes to this project will be documented in this file.
 
-# Fixes
+The format is based on [Keep a Changelog](http://keepachangelog.com/)
+and this project adheres to [Semantic Versioning](http://semver.org/).
 
-- Report directory-missing error.
+<!-- next-header -->
+## [Unreleased] - ReleaseDate
 
-<a name="0.3.1"></a>
-## 0.3.1 (2018-05-29)
-
-# Performance
-
-- Read each file only once
+<!-- next-url -->
+[Unreleased]: https://github.com/assert-rs/dir-diff/compare/e7b7555...HEAD
