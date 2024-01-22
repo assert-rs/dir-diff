@@ -58,6 +58,12 @@ fn reflexive() {
 }
 
 #[test]
+fn binary_permissions() {
+    assert!(!dir_diff::is_different("tests/permissions/good/dir1", "tests/permissions/good/dir2").unwrap());
+    assert!(dir_diff::is_different("tests/permissions/bad", "tests/permissions/good").unwrap());
+}
+
+#[test]
 fn dirs_differ() {
     assert!(dir_diff::is_different("tests/dirs_differ/dir1", "tests/dirs_differ/dir2").unwrap());
 }
