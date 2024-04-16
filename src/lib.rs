@@ -12,17 +12,18 @@
 //! ```
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-
-extern crate walkdir;
+#![warn(missing_docs)]
+#![warn(clippy::print_stderr)]
+#![warn(clippy::print_stdout)]
 
 use std::cmp::Ordering;
-use std::fs::File;
-use std::io::prelude::*;
 use std::path::Path;
 
 use walkdir::{DirEntry, WalkDir};
 
 /// The various errors that can happen when diffing two directories
+#[allow(clippy::exhaustive_enums)] // breaking change
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub enum Error {
     Io(std::io::Error),
@@ -62,7 +63,7 @@ pub fn is_different<A: AsRef<Path>, B: AsRef<Path>>(a_base: A, b_base: B) -> Res
         if a.depth() != b.depth()
             || a.file_type() != b.file_type()
             || a.file_name() != b.file_name()
-            || (a.file_type().is_file() && read_to_vec(a.path())? != read_to_vec(b.path())?)
+            || (a.file_type().is_file() && std::fs::read(a.path())? != std::fs::read(b.path())?)
         {
             return Ok(true);
         }
@@ -82,15 +83,6 @@ fn walk_dir<P: AsRef<Path>>(path: P) -> Result<walkdir::IntoIter, std::io::Error
 
 fn compare_by_file_name(a: &DirEntry, b: &DirEntry) -> Ordering {
     a.file_name().cmp(b.file_name())
-}
-
-fn read_to_vec<P: AsRef<Path>>(file: P) -> Result<Vec<u8>, std::io::Error> {
-    let mut data = Vec::new();
-    let mut file = File::open(file.as_ref())?;
-
-    file.read_to_end(&mut data)?;
-
-    Ok(data)
 }
 
 impl From<std::io::Error> for Error {

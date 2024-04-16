@@ -1,8 +1,4 @@
-extern crate dir_diff;
-
-use std::fs::create_dir;
-use std::io::ErrorKind;
-use std::path::Path;
+use std::fs::create_dir_all;
 
 #[test]
 fn easy_good() {
@@ -62,17 +58,10 @@ fn dirs_differ() {
     assert!(dir_diff::is_different("tests/dirs_differ/dir1", "tests/dirs_differ/dir2").unwrap());
 }
 
-fn ensure_dir<P: AsRef<Path>>(path: P) -> Result<(), std::io::Error> {
-    match create_dir(path) {
-        Err(ref err) if err.kind() == ErrorKind::AlreadyExists => Ok(()),
-        other => other,
-    }
-}
-
 #[test]
 fn filedepth() {
-    ensure_dir("tests/filedepth/asc/dir2/a").unwrap();
-    ensure_dir("tests/filedepth/desc/dir1/b").unwrap();
+    create_dir_all("tests/filedepth/asc/dir2/a").unwrap();
+    create_dir_all("tests/filedepth/desc/dir1/b").unwrap();
 
     assert!(
         dir_diff::is_different("tests/filedepth/asc/dir1", "tests/filedepth/asc/dir2").unwrap()
