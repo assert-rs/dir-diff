@@ -15,6 +15,10 @@
 #![warn(clippy::print_stderr)]
 #![warn(clippy::print_stdout)]
 
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+pub struct ReadmeDoctests;
+
 use std::cmp::Ordering;
 use std::path::Path;
 
