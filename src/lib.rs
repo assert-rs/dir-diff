@@ -11,7 +11,7 @@
 //! assert!(dir_diff::is_different("dir/a", "dir/b").unwrap());
 //! ```
 
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![warn(clippy::print_stderr)]
 #![warn(clippy::print_stdout)]
 
