@@ -112,13 +112,8 @@ mod tests {
 
     #[test]
     fn test_display() {
-        use std::io::ErrorKind;
-
         assert_eq!(
-            format!(
-                "{}",
-                Error::Io(std::io::Error::new(ErrorKind::Other, "oh no!"))
-            ),
+            format!("{}", Error::Io(std::io::Error::other("oh no!"))),
             "I/O error: oh no!"
         );
     }
