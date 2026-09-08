@@ -37,9 +37,9 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Io(inner) => write!(f, "I/O error: {inner}"),
-            Error::StripPrefix(inner) => write!(f, "Strip prefix error: {inner}"),
-            Error::WalkDir(inner) => write!(f, "Walk dir error: {inner}"),
+            Self::Io(inner) => write!(f, "I/O error: {inner}"),
+            Self::StripPrefix(inner) => write!(f, "Strip prefix error: {inner}"),
+            Self::WalkDir(inner) => write!(f, "Walk dir error: {inner}"),
         }
     }
 }
@@ -89,20 +89,20 @@ fn compare_by_file_name(a: &DirEntry, b: &DirEntry) -> Ordering {
 }
 
 impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Error {
-        Error::Io(e)
+    fn from(e: std::io::Error) -> Self {
+        Self::Io(e)
     }
 }
 
 impl From<std::path::StripPrefixError> for Error {
-    fn from(e: std::path::StripPrefixError) -> Error {
-        Error::StripPrefix(e)
+    fn from(e: std::path::StripPrefixError) -> Self {
+        Self::StripPrefix(e)
     }
 }
 
 impl From<walkdir::Error> for Error {
-    fn from(e: walkdir::Error) -> Error {
-        Error::WalkDir(e)
+    fn from(e: walkdir::Error) -> Self {
+        Self::WalkDir(e)
     }
 }
 

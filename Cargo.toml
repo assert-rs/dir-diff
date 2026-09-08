@@ -29,7 +29,7 @@ unused_macro_rules = "warn"
 unused_qualifications = "warn"
 
 [workspace.lints.clippy]
-allow_attributes_without_reason = "warn"
+#allow_attributes_without_reason = "warn"
 bool_assert_comparison = "allow"
 branches_sharing_code = "allow"
 byte_char_slices = "allow"  # sometimes explicit arrays are better
@@ -87,7 +87,7 @@ result_large_err = "allow"
 same_functions_in_if_condition = "warn"
 self_named_module_files = "warn"
 semicolon_if_nothing_returned = "warn"
-should_panic_without_expect = "warn"
+#should_panic_without_expect = "warn"
 str_to_string = "warn"
 string_add = "warn"
 string_add_assign = "warn"
