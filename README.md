@@ -2,7 +2,7 @@
 
 > Are the contents of two directories different?
 
-[![Documentation](https://img.shields.io/badge/docs-master-blue.svg)][Documentation]
+[![Documentation](https://img.shields.io/badge/docs-main-blue.svg)][Documentation]
 ![License](https://img.shields.io/crates/l/dir-diff.svg)
 [![Crates Status](https://img.shields.io/crates/v/dir-diff.svg)][Crates.io]
 
